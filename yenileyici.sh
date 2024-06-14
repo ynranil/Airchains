@@ -1,33 +1,50 @@
 #!/bin/bash
 
-# Renk kodları
+# Color codes
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Log dosyası
-LOG_FILE="restart_tracksd.log"
+# Flag file path
+FLAG_FILE="/tmp/stop_flag"
 
-# Döngü içinde çalışan komut
+# Log file path
+LOG_FILE="/root/track.log"
+
+# Create flag file before starting the loop
+touch $FLAG_FILE
+
+# Clear the log file at the start
+echo "" > $LOG_FILE
+
+# Command running in the loop
 while true; do
-    # Zaman damgası
-    TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
-    
-    # tracksd servisini yeniden başlat
-    if sudo systemctl restart tracksd; then
-        # Başarı durumunda çıktı ve log
-        echo -e "${GREEN}Komut çalıştı saat: ${YELLOW}${TIMESTAMP}${NC}"
-        echo "${TIMESTAMP} - tracksd restart successful" >> $LOG_FILE
-    else
-        # Hata durumunda çıktı ve log
-        echo -e "${RED}Komut başarısız oldu saat: ${YELLOW}${TIMESTAMP}${NC}"
-        echo "${TIMESTAMP} - tracksd restart failed" >> $LOG_FILE
+    # Check if flag file exists, if not, break the loop
+    if [ ! -f "$FLAG_FILE" ]; then
+        echo -e "${YELLOW}Flag file not found, stopping the loop...${NC}"
+        break
     fi
+
+    # Timestamp
+    TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+
+    # Restart the tracksd service
+    sudo systemctl restart tracksd
     
-    # Journalctl komutunu renkli bir şekilde öner
-    echo -e "${GREEN}Verileri kontrol et: ${NC}${YELLOW}sudo journalctl -u tracksd -fo cat${NC}"
+    # Show output in color
+    echo -e "${GREEN}Command executed at: ${YELLOW}${TIMESTAMP}${NC}"
+
+    # Wait for 5 seconds to allow the service to stabilize
+    sleep 5
+
+    # Run journalctl command and save the output to log file, clearing previous logs
+    echo -e "${GREEN}Saving logs...${NC}"
+    sudo journalctl -u tracksd -fo cat > $LOG_FILE
+
+    echo -e "${GREEN}Logs saved to ${LOG_FILE}.${NC}"
     
-    # 15 dakika bekle
+    # Wait for 15 minutes (900 seconds)
     sleep 900
 done
+
+echo -e "${GREEN}Loop successfully stopped.${NC}"
