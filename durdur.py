@@ -7,10 +7,10 @@ while True:
     try:
         # Komutu başlat
         process = subprocess.Popen(['./tracks', 'start'])
-        print("Komut çalıştırıldı, 2 dakika bekleniyor...")
+        print("Komut çalıştırıldı, 10 dakika bekleniyor...")
 
         # 2 dakika bekle
-        time.sleep(120)
+        time.sleep(600)
 
         # Ctrl + C sinyali gönder (SIGINT)
         os.kill(process.pid, signal.SIGINT)
